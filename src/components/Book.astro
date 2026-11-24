@@ -62,6 +62,10 @@ const b = business;
     border: 1px solid rgb(241 255 250 / .14); outline: none; transition: border-color .15s, box-shadow .15s; color-scheme: dark;
   }
   .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--color-teal-bright); box-shadow: 0 0 0 3px rgb(79 196 154 / .25); }
+  /* iOS Safari gives date inputs an intrinsic min-width and centres the value: reset both */
+  .field input[type="date"] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; min-height: 3.1rem; text-align: left; }
+  .field input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+  .field label, .field { min-width: 0; }
   .field ::placeholder { color: rgb(241 255 250 / .4); }
   .field option { color: var(--color-ink); }
   .field [aria-invalid="true"] { border-color: var(--color-carmine); }

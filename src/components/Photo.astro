@@ -1,0 +1,9 @@
+---
+// A photo, or (until one is supplied) a clearly-marked placeholder of the same size.
+import Tbc from './Tbc.astro';
+interface Props { src: string | null; alt: string; label: string; class?: string; dark?: boolean }
+const { src, alt, label, class: cls = '', dark = false } = Astro.props;
+---
+{src
+  ? <img src={src} alt={alt} class={`object-cover [filter:saturate(.88)_contrast(1.05)] ${cls}`} loading="lazy" />
+  : <div class={`grid place-items-center ${dark ? 'bg-white/[0.06]' : 'bg-ink/[0.06]'} ${cls}`}><Tbc label={label} /></div>}

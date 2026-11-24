@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f1fffa;   /* Mint Cream */
+  --color-paper-2: #cee0dc; /* Azure Mist */
+  --color-ink: #1d201f;     /* Carbon Black */
+  --color-ink-2: #2b302e;
+  --color-bay: #141716;
+  --color-teal: #2a7f62;    /* Jungle Teal */
+  --color-teal-bright: #4fc49a; /* teal for text/glow on dark */
+  --color-carmine: #b30f2d; /* Carmine */
+  --color-carmine-bright: #ff5c74; /* carmine for text on dark */
+  --color-steel: #8b8a86;
+  --font-display: "Big Shoulders Display", "Impact", sans-serif;
+  --font-logo: "Big Shoulders Display", "Impact", sans-serif;
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+html { scroll-behavior: smooth; scroll-padding-top: 56px; }
+body { @apply bg-paper text-ink font-sans antialiased; overflow-x: clip; }
+/* grid/flex children may shrink below their content width, so nothing pushes a column wider than the screen */
+.grid > *, .flex > * { min-width: 0; }
+
+
+.tag { @apply font-sans text-sm; }
+
+@keyframes marquee { to { transform: translateX(-50%); } }
+.marquee { animation: marquee 60s linear infinite; }
+.marquee:hover { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee { animation: none; }
+}

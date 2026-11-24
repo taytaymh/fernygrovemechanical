@@ -1,0 +1,89 @@
+---
+import type { ReviewData } from '../lib/google-reviews';
+interface Props { data: ReviewData }
+const { data } = Astro.props;
+const { rating, count, reviews, mapsUrl, isSample } = data;
+const stars = (n: number) => '★'.repeat(Math.round(n)) + '☆'.repeat(5 - Math.round(n));
+const initials = (n: string) => n.split(' ').map((p) => p[0]).slice(0, 2).join('');
+---
+<section id="reviews" class="relative overflow-hidden bg-paper">
+  <!-- marquee strip bridging from the dark bay -->
+  <div class="bg-carmine py-3 text-paper" aria-hidden="true">
+    <div class="marquee flex w-max gap-10 whitespace-nowrap font-display text-2xl font-black uppercase">
+      {[...Array(2)].map(() => (
+        <>
+          {['“No pushy upselling”', '★', '“The real deal”', '★', '“Not being ripped off”', '★', '“Customers for life”', '★', '“No big surprises on pickup”', '★'].map((t) => <span>{t}</span>)}
+        </>
+      ))}
+    </div>
+  </div>
+
+  <div class="mx-auto max-w-7xl px-5 py-24">
+
+    <div class="grid gap-10 lg:grid-cols-[auto_1fr] lg:items-end">
+      <div>
+        <div class="flex items-end gap-4">
+          <span class="font-display text-[clamp(7rem,18vw,14rem)] font-black leading-[0.8]">{rating.toFixed(1)}</span>
+          <div class="pb-3">
+            <div class="text-4xl text-teal" aria-label={`${rating} out of 5 stars`}>{stars(rating)}</div>
+            <p class="mt-1 text-ink/70">{isSample ? 'on Google' : `from ${count} Google reviews`}</p>
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-3 lg:justify-end">
+        <a href={mapsUrl} target="_blank" rel="noopener" class="rounded-full px-5 py-3 font-semibold ring-1 ring-ink/15 transition hover:bg-ink hover:text-paper hover:ring-ink">Read them all on Google ↗</a>
+        <a href={mapsUrl} target="_blank" rel="noopener" class="rounded-full px-5 py-3 font-semibold ring-1 ring-ink/15 transition hover:bg-ink hover:text-paper hover:ring-ink">Been in? Leave us one</a>
+      </div>
+    </div>
+
+    <div class="mt-14 grid items-stretch gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {reviews.map((r, i) => (
+        <figure data-extra={i >= 6 ? 'all' : i >= 3 ? 'mobile' : undefined} class={`flex flex-col rounded-3xl p-6 ${i === 0 ? 'bg-teal text-paper' : 'bg-paper-2/55'} ${i >= 6 ? 'hidden' : i >= 3 ? 'max-md:hidden' : ''}`}>
+          <div class={i === 0 ? "text-paper" : "text-teal"} aria-label={`${r.rating} stars`}>{stars(r.rating)}</div>
+          {i === 0 && r.pull && <p class="mt-3 font-display text-4xl font-black uppercase leading-[0.95] text-paper">“{r.pull}”</p>}
+          <blockquote data-clamp class={`mt-3 whitespace-pre-line ${i === 0 ? 'line-clamp-[3] text-paper/85' : 'line-clamp-[7] text-lg leading-relaxed'}`}>“{r.text}”</blockquote>
+          <button data-more class={`mt-2 hidden self-start text-sm font-semibold underline decoration-2 underline-offset-4 ${i === 0 ? 'decoration-paper/60' : 'decoration-carmine'}`}>Read more</button>
+          <div class="mt-auto">
+          {r.services && (
+            <ul class="mt-4 flex flex-wrap gap-1.5">
+              {r.services.map((sv) => <li class={`rounded-full px-2.5 py-1 text-[11px] ${i === 0 ? 'bg-white/15' : 'bg-ink/[0.07]'}`}>{sv}</li>)}
+            </ul>
+          )}
+          <figcaption class="mt-5 flex items-center gap-3 text-sm">
+            {r.photo
+              ? <img src={r.photo} alt="" class="h-9 w-9 rounded-full" referrerpolicy="no-referrer" loading="lazy" />
+              : <span class="grid h-9 w-9 place-items-center rounded-full bg-paper-2 font-semibold text-ink">{initials(r.name)}</span>}
+            <span>
+              <span class="block font-semibold">{r.name}</span>
+              <span class={i === 0 ? 'text-paper/60' : 'text-ink/55'}>{r.when} · Google</span>
+            </span>
+          </figcaption>
+          </div>
+        </figure>
+      ))}
+    </div>
+    <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
+      <button data-show-all class="rounded-full px-5 py-3 font-semibold ring-1 ring-ink/15 transition hover:bg-ink hover:text-paper hover:ring-ink">Show more reviews</button>
+      <p class="text-xs text-ink/50">Reviews from Google, shown unedited. <a href={mapsUrl} target="_blank" rel="noopener" class="underline underline-offset-2 hover:text-ink">Read all {count} on Google ↗</a></p>
+    </div>
+  </div>
+</section>
+
+<script>
+  // "Show more reviews": reveal the hidden cards, then hide the button
+  const showAll = document.querySelector<HTMLElement>('[data-show-all]');
+  showAll?.addEventListener('click', () => {
+    document.querySelectorAll<HTMLElement>('#reviews [data-extra]').forEach((f) => f.classList.remove('hidden', 'max-md:hidden'));
+    showAll.remove();
+    document.querySelectorAll<HTMLElement>('#reviews figure').forEach(checkClamp);
+  });
+  // "Read the rest" only where a review is actually clamped
+  function checkClamp(fig: HTMLElement) {
+    const q = fig.querySelector<HTMLElement>('[data-clamp]'), btn = fig.querySelector<HTMLElement>('[data-more]');
+    if (!q || !btn || btn.dataset.bound || q.scrollHeight <= q.clientHeight + 2) return;
+    btn.dataset.bound = '1';
+    btn.classList.remove('hidden');
+    btn.addEventListener('click', () => { q.classList.remove('line-clamp-[7]', 'line-clamp-[3]'); btn.remove(); });
+  }
+  document.querySelectorAll<HTMLElement>('#reviews figure').forEach(checkClamp);
+</script>

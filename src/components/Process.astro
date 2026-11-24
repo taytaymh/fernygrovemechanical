@@ -1,0 +1,33 @@
+---
+import { business } from '../data/business';
+import Photo from './Photo.astro';
+const steps = [
+  { n: '1', t: 'Book in', d: 'Ring us or send a request below. Tell us what it’s doing — the noise, the smell, the light on the dash.' },
+  { n: '2', t: 'We look, then we call', d: 'We find the actual problem and ring you with what it is, what it costs, and what can wait. Nothing starts until you say yes.' },
+  { n: '3', t: 'Pick it up', d: 'Ready when we said. You get a plain-English rundown of what we did and anything to keep an eye on.' },
+];
+const makes = business.makesFull ?? business.makesSeen;
+---
+<section id="process" class="bg-paper-2">
+  <div class="mx-auto grid max-w-7xl gap-10 px-5 py-24 lg:grid-cols-[1.1fr_1fr] lg:items-stretch">
+    <div>
+      <h2 class="max-w-[16ch] font-display text-[clamp(2.2rem,4.2vw,3.5rem)] font-black uppercase leading-[0.9]">Three steps.<br />No surprises.</h2>
+      <ol class="mt-10 space-y-3">
+        {steps.map((s) => (
+          <li class="flex gap-4 rounded-3xl bg-paper p-5 sm:gap-5 sm:p-6">
+            <span class="grid h-10 w-10 shrink-0 sm:h-12 sm:w-12 place-items-center rounded-full bg-carmine font-display text-2xl font-black text-paper">{s.n}</span>
+            <div>
+              <h3 class="font-display text-2xl font-extrabold">{s.t}</h3>
+              <p class="mt-1 text-ink/70">{s.d}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <div class="mt-8 flex flex-nowrap items-center gap-3 overflow-x-auto whitespace-nowrap text-sm [scrollbar-width:none]">
+        <span class="shrink-0 text-ink/75">{business.makesFull ? 'We work on' : 'Recently in the workshop:'}</span>
+        {makes.slice(0, 4).map((m) => <span class="shrink-0 rounded-full bg-paper px-3 py-1.5">{m}</span>)}
+      </div>
+    </div>
+    <Photo src={business.photos.workshop} alt="Inside the Ferny Grove Mechanical workshop" label="Workshop photo" class="min-h-[360px] w-full rounded-3xl object-[30%_center] lg:h-full" />
+  </div>
+</section>

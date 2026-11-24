@@ -1,0 +1,97 @@
+---
+import { business, BOOKING_WEBHOOK } from '../data/business';
+import { services } from '../data/services';
+const b = business;
+---
+<section id="book" class="relative bg-ink text-paper">
+  <div class="mx-auto grid max-w-7xl gap-10 px-5 pt-24 lg:grid-cols-2 lg:pb-24">
+    <div class="lg:pr-10">
+      <h2 class="font-display text-[clamp(2.2rem,4.2vw,3.5rem)] font-black uppercase leading-[0.9]">Book in now.</h2>
+      <p class="mt-5 max-w-md text-xl text-paper/75">Fill out the form or give us a call at <a href={b.phoneHref} class="whitespace-nowrap font-semibold text-paper underline decoration-carmine decoration-2 underline-offset-4">{b.phone}</a>.</p>
+      <div class="mt-8">
+      <form data-book class="grid gap-4 rounded-3xl bg-white/[0.05] p-6 sm:grid-cols-2 md:p-8" data-webhook={BOOKING_WEBHOOK ?? ''} novalidate>
+        <label class="field"><span>Your name</span><input name="name" required autocomplete="name" /></label>
+        <label class="field"><span>Phone</span><input name="phone" type="tel" required autocomplete="tel" inputmode="tel" /></label>
+        <label class="field"><span>Car (make &amp; model)</span><input name="car" placeholder="e.g. 2016 Hyundai Sonata" /></label>
+        <label class="field"><span>Rego <em>(optional)</em></span><input name="rego" autocapitalize="characters" /></label>
+        <label class="field"><span>What do you need?</span>
+          <select name="service" required>
+            <option value="">Choose one…</option>
+            {services.map((s) => <option>{s.title}</option>)}
+            <option>Not sure / something else</option>
+          </select>
+        </label>
+        <label class="field"><span>Preferred day</span><input name="date" type="date" /></label>
+        <label class="field sm:col-span-2"><span>What's it doing? <em>(optional)</em></span><textarea name="notes" rows="3" placeholder="The noise, the smell, the light on the dash…"></textarea></label>
+        <div class="sm:col-span-2 flex flex-wrap items-center justify-between gap-4">
+          <p class="max-w-sm text-sm text-paper/75">This is a <strong>request</strong>, not a confirmed booking. We'll ring you to lock in a time.</p>
+          <button class="rounded-full bg-carmine px-6 py-3 font-semibold text-paper transition hover:bg-paper hover:text-ink disabled:opacity-60">Send request</button>
+        </div>
+        <p data-book-msg class="sm:col-span-2 hidden rounded-2xl p-4 text-sm" role="status" aria-live="polite"></p>
+      </form>
+      </div>
+    </div>
+
+    <!-- map (placeholder image, links to Google Maps) with the location card on top -->
+    <!-- map bleeds to the top, bottom and right edges of the section on desktop; full width on mobile -->
+    <div id="find-us" class="-mx-5 bg-paper text-ink lg:absolute lg:inset-y-0 lg:left-1/2 lg:right-0 lg:mx-0 lg:bg-transparent">
+      <a href={b.mapsUrl} target="_blank" rel="noopener" aria-label="Open Ferny Grove Mechanical in Google Maps" class="block h-64 sm:h-80 lg:absolute lg:inset-0 lg:h-auto">
+        <img src="/photos/map.jpg" alt="Map showing Ferny Grove Mechanical in Everton Hills, Brisbane" class="h-full w-full object-cover object-[30%_40%]" loading="lazy" />
+      </a>
+      <div class="lg:pointer-events-none lg:absolute lg:bottom-24 lg:right-8 lg:w-[360px]">
+        <div class="p-6 lg:pointer-events-auto lg:rounded-3xl lg:bg-paper lg:shadow-[0_20px_50px_-20px_rgba(29,32,31,0.45)]">
+          <p class="text-lg font-semibold">{b.address}</p>
+          <dl class="mt-3 divide-y divide-ink/10 border-y border-ink/10">
+            {b.hours.map(([d, h]) => <div class="flex justify-between py-2.5"><dt class="font-medium">{d}</dt><dd class="text-sm">{h}</dd></div>)}
+          </dl>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <a href={b.mapsUrl} target="_blank" rel="noopener" class="rounded-full bg-carmine px-5 py-2.5 font-semibold text-paper transition hover:bg-ink">Directions ↗</a>
+            <a href={b.phoneHref} class="rounded-full px-5 py-2.5 font-semibold ring-1 ring-ink/15 transition hover:bg-ink hover:text-paper">{b.phone}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .field { display: grid; gap: .4rem; font-size: .875rem; font-weight: 500; }
+  .field em { font-style: normal; color: rgb(241 255 250 / .5); font-weight: 400; }
+  .field input, .field select, .field textarea {
+    width: 100%; border-radius: .9rem; background: rgb(241 255 250 / .07); color: var(--color-paper); padding: .75rem .9rem; font-size: 1rem; font-weight: 400;
+    border: 1px solid rgb(241 255 250 / .14); outline: none; transition: border-color .15s, box-shadow .15s; color-scheme: dark;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--color-teal-bright); box-shadow: 0 0 0 3px rgb(79 196 154 / .25); }
+  .field ::placeholder { color: rgb(241 255 250 / .4); }
+  .field option { color: var(--color-ink); }
+  .field [aria-invalid="true"] { border-color: var(--color-carmine); }
+</style>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('[data-book]')!;
+  const msg = form.querySelector<HTMLElement>('[data-book-msg]')!;
+  const btn = form.querySelector('button')!;
+  const show = (text: string, ok: boolean) => {
+    msg.textContent = text;
+    msg.className = `sm:col-span-2 rounded-2xl p-4 text-sm ${ok ? 'bg-teal/25 text-teal-bright' : 'bg-carmine/25 text-carmine-bright'}`;
+  };
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    let bad = false;
+    form.querySelectorAll<HTMLInputElement>('[required]').forEach((el) => {
+      const empty = !el.value.trim(); el.setAttribute('aria-invalid', String(empty)); bad ||= empty;
+    });
+    if (bad) return show('Please add your name, phone and what you need.', false);
+    const hook = form.dataset.webhook;
+    if (!hook) return show('Online requests aren’t switched on yet — please ring 0410 927 793.', false);
+    btn.disabled = true;
+    try {
+      const res = await fetch(hook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) });
+      if (!res.ok) throw new Error(String(res.status));
+      form.reset();
+      show('Got it, thanks! This isn’t confirmed yet — we’ll ring you shortly to lock in a time.', true);
+    } catch {
+      show('That didn’t send. Please ring 0410 927 793 and we’ll sort it.', false);
+    } finally { btn.disabled = false; }
+  });
+</script>

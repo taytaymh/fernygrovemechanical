@@ -1,0 +1,39 @@
+---
+import { business } from '../data/business';
+// Fleet & trade. Quotes are verbatim excerpts from real Google reviews (see src/data/reviews.ts).
+const quotes = [
+  { q: 'If it’s a routine service or an unexpected breakdown that arrives on a tow truck, we know the vehicles are in good hands.', who: 'Joshua Williamson', what: 'Business fleet, since day 1' },
+  { q: 'Jonno has been serving my fleet of All Fix Plumbing vehicles for the last 5 years.', who: 'James Carolan', what: 'All Fix Plumbing' },
+];
+const points = [
+  'One workshop and one phone number for every vehicle',
+  'Short-notice breakdowns fitted in wherever we can',
+  'Straight quotes before anything’s done, same as everyone',
+];
+---
+<section id="fleet" class="relative isolate overflow-hidden bg-teal text-paper">
+  {business.photos.fleet
+    ? <img src={business.photos.fleet} alt="" class="absolute inset-0 -z-10 h-full w-full object-cover opacity-[0.12] mix-blend-luminosity" loading="lazy" />
+    : null}
+  <div class="mx-auto grid max-w-7xl gap-12 px-5 py-24 lg:grid-cols-2">
+    <div>
+      <h2 class="font-display text-[clamp(2.2rem,4.2vw,3.5rem)] font-black uppercase leading-[0.9]">Keep the work utes working.</h2>
+      <p class="mt-5 max-w-lg text-lg text-paper/80">Tradies and local businesses trust us with their whole fleet. Vans, utes, the boss's car: one workshop, one phone number.</p>
+      <ul class="mt-8 space-y-3">
+        {points.map((p) => (
+          <li class="flex gap-3"><span class="mt-2 h-2 w-2 shrink-0 rounded-full bg-paper"></span><span>{p}</span></li>
+        ))}
+      </ul>
+      <a href="#book" class="mt-8 inline-block rounded-full bg-carmine px-6 py-3 font-semibold text-paper transition hover:bg-paper hover:text-ink">Talk fleet with Jono</a>
+    </div>
+    <div class="space-y-4 lg:pt-10">
+      {quotes.map((x) => (
+        <figure class="rounded-3xl bg-white/10 p-7">
+          <div class="text-paper" aria-label="5 stars">★★★★★</div>
+          <blockquote class="mt-3 text-xl leading-snug">“{x.q}”</blockquote>
+          <figcaption class="mt-4 text-sm text-paper/70"><span class="font-semibold text-paper">{x.who}</span> · {x.what} · Google</figcaption>
+        </figure>
+      ))}
+    </div>
+  </div>
+</section>

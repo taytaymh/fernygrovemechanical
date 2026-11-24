@@ -1,0 +1,325 @@
+---
+// One pinned, scroll-driven 3D scene:
+//   1. car sits side-on → turns to face you
+//   2. hood opens, work light comes on
+//   3. camera glides down into the bay while the page darkens around it
+//   4. once settled: hotspots + "Under the hood" services panel fade in (interactive)
+//   5. a little more scroll, then the whole thing un-pins into the reviews
+// Model: public/models/sonata.glb. Hotspot parts: src/data/services.ts.
+import { services } from '../data/services';
+interface Props { rating: number; count: number; isSample: boolean }
+const { rating, count, isSample } = Astro.props;
+---
+
+<section id="garage" class="relative" style="height:460vh">
+  <!-- nav target: lands where the services panel is fully shown -->
+  <div id="services" class="absolute left-0" style="top:calc(0.75 * (460vh - 100vh))" aria-hidden="true"></div>
+
+  <div data-stage class="sticky top-0 h-screen overflow-hidden bg-paper">
+    <!-- darkens behind the car during the dive (sits under the canvas, so no flash to black) -->
+    <div data-dark class="absolute inset-0 bg-[radial-gradient(ellipse_at_40%_45%,#2b302e,#141716_70%)] opacity-0"></div>
+
+    <!-- Hero copy -->
+    <div data-hero class="absolute inset-x-0 top-0 z-10 mx-auto max-w-7xl px-5 pt-28 md:pt-36 will-change-transform">
+      <h1 class="max-w-[12ch] font-display text-[clamp(3rem,6.6vw,6.6rem)] font-black uppercase leading-[0.88] tracking-tight">
+        The best bang for your buck in Brisbane.
+      </h1>
+      <p class="mt-5 max-w-md text-lg text-ink/75">
+        Fixed right and priced fair — with no fuss along the way.
+      </p>
+      <a href="#reviews" class="mt-7 inline-flex items-center gap-3 rounded-full bg-white/80 px-4 py-2.5 ring-1 ring-ink/10 shadow-[0_10px_30px_-12px_rgba(29,32,31,0.25)] backdrop-blur transition hover:-translate-y-0.5 hover:ring-ink/20">
+        <svg viewBox="0 0 48 48" class="h-5 w-5" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+        <span class="font-display text-2xl font-black">{rating.toFixed(1)}</span>
+        <span class="text-teal" aria-hidden="true">★★★★★</span>
+        <span class="text-sm text-ink/70">{isSample ? 'Google reviews' : `${count} Google reviews`}</span>
+      </a>
+    </div>
+
+    <canvas data-canvas class="absolute inset-0 h-full w-full touch-pan-y" aria-label="3D car that turns to face you, opens its hood and shows the engine bay as you scroll" role="img"></canvas>
+    <p data-loading class="tag absolute bottom-1/3 right-[22%] text-ink/40">Warming up…</p>
+
+    <!-- intro line, bottom-left; fades as soon as you start scrolling -->
+    <div data-intro class="pointer-events-none absolute inset-x-0 bottom-6 z-10 mx-auto max-w-7xl px-5 md:bottom-10">
+      <p class="max-w-xl text-lg leading-snug text-ink/80 md:max-w-3xl md:text-2xl">Ferny Grove Mechanical is a family owned and run business that will treat your noble steed like one of our own.</p>
+    </div>
+    <p data-cue class="tag absolute bottom-10 right-5 z-10 hidden text-ink/60 md:block md:right-10">Scroll to pop the hood ↓</p>
+    <a data-skip href="#reviews" class="absolute bottom-6 right-5 z-30 rounded-full bg-paper/90 px-4 py-2 text-sm font-medium text-ink opacity-0 shadow-[0_6px_20px_-10px_rgba(29,32,31,.5)] backdrop-blur transition-opacity md:right-10">Skip to reviews ↓</a>
+
+    <!-- Hotspots (positioned every frame from 3D) -->
+    <div data-spots class="pointer-events-none absolute inset-0 z-10">
+      {services.map((s) => (
+        <button data-spot={s.id} class="spot absolute left-0 top-0 grid h-12 w-12 place-items-center rounded-full opacity-0 md:h-11 md:w-11" aria-label={s.title} tabindex="-1">
+          <span class="spot-ring absolute inset-1 rounded-full border-2 border-teal-bright"></span>
+          <span class="h-3.5 w-3.5 rounded-full md:h-2.5 md:w-2.5 bg-teal-bright ring-2 ring-paper shadow-[0_0_14px_#4fc49a]"></span>
+        </button>
+      ))}
+    </div>
+
+    <!-- "Under the hood" UI. data-slot marks where the engine bay should sit on screen. -->
+    <div data-ui class="pointer-events-none absolute inset-0 z-20 text-paper" inert>
+      <div class="mx-auto flex h-full max-w-7xl flex-col gap-4 px-5 pb-5 pt-20 lg:grid lg:grid-cols-[1fr_400px] lg:gap-10 lg:pb-10 lg:pt-28">
+        <div class="flex min-h-0 flex-1 flex-col">
+          <div data-reveal>
+            <h2 class="font-display text-[clamp(2rem,4.5vw,3.8rem)] font-black uppercase leading-[0.9]">What we fix. Tap a part.</h2>
+          </div>
+          <div data-slot class="min-h-0 flex-1"></div>
+          <p data-reveal class="tag hidden text-paper/60 lg:block">Drag to look around · keep scrolling for reviews ↓</p>
+        </div>
+
+        <aside data-reveal class="pointer-events-auto lg:self-center">
+          <article class="rounded-3xl border border-carmine-bright/40 bg-bay/80 p-5 backdrop-blur lg:p-7">
+            <h3 data-panel-title class="font-display text-3xl font-extrabold lg:text-4xl">{services[0].title}</h3>
+            <p data-panel-blurb class="mt-2 text-paper/75 lg:text-lg">{services[0].blurb}</p>
+            <a href="#book" class="mt-4 inline-block rounded-full bg-carmine px-5 py-2.5 font-semibold text-paper transition hover:bg-teal lg:mt-6">Book this in</a>
+          </article>
+          <ul class="mt-3 flex gap-2 overflow-x-auto pb-1 text-sm lg:grid lg:grid-cols-2 lg:overflow-visible">
+            {services.map((s, i) => (
+              <li class="shrink-0">
+                <button data-pick={s.id} class="w-full whitespace-nowrap rounded-xl border border-white/10 bg-bay/60 px-3 py-2.5 text-left text-paper/70 transition hover:border-carmine-bright/60 hover:text-paper aria-pressed:border-carmine-bright aria-pressed:text-paper lg:whitespace-normal" aria-pressed={i === 0 ? 'true' : 'false'}>
+                  {s.title}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      </div>
+    </div>
+  </div>
+  <script type="application/json" data-services set:html={JSON.stringify(services)} />
+</section>
+
+<style>
+  .spot-ring { animation: ping 2.2s ease-out infinite; }
+  .spot.is-active .spot-ring, .spot:hover .spot-ring, .spot:focus-visible .spot-ring { animation: none; background: rgb(79 196 154 / .3); }
+  .spot:focus-visible { outline: 2px solid #f2ede3; outline-offset: 2px; }
+  @keyframes ping { 0% { transform: scale(.4); opacity: 1 } 100% { transform: scale(1.3); opacity: 0 } }
+  @media (prefers-reduced-motion: reduce) { .spot-ring { animation: none; } }
+</style>
+
+<script>
+  import * as THREE from 'three';
+  import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+  import { loadCar, byName } from '../lib/car';
+
+  type Service = { id: string; part?: string; title: string; blurb: string };
+  const sec = document.getElementById('garage')!;
+  const $ = <T extends HTMLElement>(s: string) => sec.querySelector<T>(s)!;
+  const canvas = $<HTMLCanvasElement>('[data-canvas]');
+  const skip = $('[data-skip]'), introEl = $('[data-intro]'), hero = $('[data-hero]'), dark = $('[data-dark]'), cue = $('[data-cue]'), loading = $('[data-loading]');
+  const ui = $('[data-ui]'), slot = $('[data-slot]');
+  const reveals = [...sec.querySelectorAll<HTMLElement>('[data-reveal]')];
+  const services: Service[] = JSON.parse($('[data-services]').textContent!);
+  const spotEls = new Map([...sec.querySelectorAll<HTMLElement>('[data-spot]')].map((el) => [el.dataset.spot!, el]));
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const lerp = THREE.MathUtils.lerp;
+
+  // ── services panel ──
+  let active = services[0].id;
+  function pick(id: string) {
+    const i = services.findIndex((s) => s.id === id);
+    if (i < 0) return;
+    active = id;
+    $('[data-panel-title]').textContent = services[i].title;
+    $('[data-panel-blurb]').textContent = services[i].blurb;
+    sec.querySelectorAll<HTMLElement>('[data-pick]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.pick === id)));
+    spotEls.forEach((el, k) => el.classList.toggle('is-active', k === id));
+  }
+  sec.querySelectorAll<HTMLElement>('[data-pick]').forEach((b) => b.addEventListener('click', () => pick(b.dataset.pick!)));
+  spotEls.forEach((el, id) => el.addEventListener('click', () => pick(id)));
+  pick(active);
+
+  // ── renderer / scene ──
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
+  const scene = new THREE.Scene();
+  scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 100);
+
+  const sun = new THREE.DirectionalLight(0xfff3e0, 2.2);
+  sun.position.set(3, 8, 4);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 1, far: 20 });
+  const hemi = new THREE.HemisphereLight(0xf1fffa, 0x7f8f8a, 0.6);
+  scene.add(sun, hemi);
+
+  const groundMat = new THREE.ShadowMaterial({ opacity: 0.22 });
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  const rig = new THREE.Group();
+  scene.add(rig);
+  const workLight = new THREE.PointLight(0xfff4e0, 0, 4, 1.2);
+  rig.add(workLight);
+
+  let hoodPivot: THREE.Object3D | null = null;
+  const bay = new THREE.Vector3(0, 0.8, 1.7); // bay centre (car space = world once facing you)
+  const anchors = new Map<string, { pos: THREE.Vector3; mats: THREE.MeshStandardMaterial[] }>();
+
+  loadCar().then((car) => {
+    rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); rig.updateMatrixWorld(true); // measure in car space
+    rig.add(car);
+    car.updateMatrixWorld(true);
+    const hood = byName(car, 'Hood');
+    if (hood) {
+      const hb = new THREE.Box3().setFromObject(hood); // measured closed, rig at rest
+      hoodPivot = new THREE.Object3D();
+      hoodPivot.position.set(0, hb.max.y, hb.min.z); // hinge by the windscreen, nose = +z
+      rig.add(hoodPivot);
+      hoodPivot.attach(hood);
+      bay.set(0, hb.min.y - 0.1, (hb.min.z + hb.max.z) / 2);
+      workLight.position.set(0, hb.max.y + 0.35, bay.z + 0.15);
+    }
+    for (const s of services) {
+      const part = s.part ? byName(car, s.part) : undefined;
+      if (!part) { spotEls.get(s.id)?.remove(); continue; }
+      const b = new THREE.Box3().setFromObject(part);
+      const mats: THREE.MeshStandardMaterial[] = [];
+      part.traverse((o: any) => { if (o.isMesh) { o.material = o.material.clone(); mats.push(o.material); } }); // glow only this part
+      anchors.set(s.id, { pos: new THREE.Vector3((b.min.x + b.max.x) / 2, b.max.y + 0.02, (b.min.z + b.max.z) / 2), mats });
+    }
+    loading.remove();
+  });
+
+  // ── input ──
+  const t0 = performance.now();
+  let mx = 0, my = 0, tmx = 0, tmy = 0;
+  addEventListener('pointermove', (e) => { tmx = (e.clientX / innerWidth) * 2 - 1; tmy = (e.clientY / innerHeight) * 2 - 1; });
+  let yaw = 0, pitch = 0, tYaw = 0, tPitch = 0, dragging = false, lx = 0, ly = 0, interactive = false;
+  canvas.addEventListener('pointerdown', (e) => { if (!interactive) return; dragging = true; lx = e.clientX; ly = e.clientY; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointerup', () => (dragging = false));
+  canvas.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    tYaw = clamp(tYaw - (e.clientX - lx) * 0.006, -0.9, 0.9);
+    tPitch = clamp(tPitch + (e.clientY - ly) * 0.004, -0.35, 0.3);
+    lx = e.clientX; ly = e.clientY;
+  });
+
+  let W = 1, H = 1;
+  const slotC = { x: 0, y: 0, w: 1, h: 1 };
+  function resize() {
+    W = canvas.clientWidth; H = canvas.clientHeight;
+    renderer.setSize(W, H, false);
+    camera.aspect = W / H; camera.updateProjectionMatrix();
+    const r = slot.getBoundingClientRect(), s = sec.querySelector('[data-stage]')!.getBoundingClientRect();
+    Object.assign(slotC, { x: r.left - s.left + r.width / 2, y: r.top - s.top + r.height / 2, w: Math.max(r.width, 200), h: Math.max(r.height, 160) });
+  }
+  addEventListener('resize', resize); resize();
+
+  /** Shift the rendered image so the scene centre lands at (cx, cy) instead of the canvas centre. */
+  function frameAt(cx: number, cy: number) {
+    const L = W / 2 - cx, U = H / 2 - cy;
+    if (Math.abs(L) < 0.5 && Math.abs(U) < 0.5) return camera.clearViewOffset();
+    camera.setViewOffset(W + 2 * Math.abs(L), H + 2 * Math.abs(U), L > 0 ? 2 * L : 0, U > 0 ? 2 * U : 0, W, H);
+  }
+
+  const heroPos = new THREE.Vector3(), heroLook = new THREE.Vector3();
+  const bayPos = new THREE.Vector3(), bayLook = new THREE.Vector3(), wantLook = new THREE.Vector3(), tmp = new THREE.Vector3();
+  const glow = new THREE.Color('#4fc49a'); // bright teal so it reads against the carmine paint
+  const selPos = new THREE.Vector3(); // smoothed position of the selected part (car space)
+  let selInit = false, last = 0;
+
+  function frame(now: number) {
+    requestAnimationFrame(frame);
+    const r = sec.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > innerHeight) return;
+
+    const dt = Math.min(10, last ? (now - last) / 16.67 : 1); last = now; // frame-rate independent smoothing
+    const k = (f: number) => 1 - Math.pow(1 - f, dt);
+    const intro = reduce ? 1 : ease(clamp((now - t0) / 1400));
+    mx = lerp(mx, tmx, 0.05); my = lerp(my, tmy, 0.05);
+
+    const p = clamp(-r.top / (sec.offsetHeight - innerHeight));
+    const a = ease(clamp(p / 0.2));            // turn to face you
+    const b = ease(clamp((p - 0.22) / 0.16));  // hood opens
+    const c = ease(clamp((p - 0.4) / 0.24));   // glide into the bay
+    const d = ease(clamp((p - 0.64) / 0.07));  // reveal hotspots + panel
+    interactive = d > 0.95;
+
+    const wide = innerWidth >= 1024;
+
+    // ── hero camera ──
+    const hfov = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect);
+    const dist = Math.max(wide ? 9 : 5.5, lerp(wide ? 5.0 : 2.7, wide ? 2.8 : 1.5, a) / Math.tan(hfov / 2));
+    rig.rotation.y = lerp(-Math.PI / 2, 0, a) + mx * 0.25 * (1 - c) - (1 - intro) * 0.35;
+    rig.position.x = (wide ? 2.2 : 0) * (1 - a);
+    rig.updateMatrixWorld();
+    if (hoodPivot) hoodPivot.rotation.x = -b * 1.15;
+    heroPos.set(0, 1.5 + my * -0.4 * (1 - c), dist);
+    heroLook.set(0, 0.65 + (wide ? -0.25 : 2.3) * (1 - a), 0);
+
+    // ── bay camera (fits the engine bay into the [data-slot] area) ──
+    if (interactive && !dragging && !reduce) tYaw += (Math.sin(now / 4000) * 0.25 * d - tYaw) * k(0.002); // idle drift eases in
+    if (!interactive) { tYaw *= 0.9; tPitch *= 0.9; }
+    yaw += (tYaw - yaw) * k(0.08); pitch += (tPitch - pitch) * k(0.08);
+    // Selection focus blends in with the reveal (d), so there's no jump when the panel appears.
+    // selPos glides between parts when the user picks a new one.
+    const selTarget = anchors.get(active)?.pos ?? bay;
+    if (!selInit && anchors.size) { selPos.copy(selTarget); selInit = true; } else selPos.lerp(selTarget, k(0.06));
+    wantLook.copy(bay).lerp(selPos, 0.4 * d).applyMatrix4(rig.matrixWorld);
+    bayLook.copy(wantLook);
+    const zoom = 1 - 0.1 * d;
+    const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const fitW = 2.25 / (2 * tanV * (slotC.w / H)), fitH = 1.85 / (2 * tanV * (slotC.h / H));
+    const bd = Math.max(fitW, fitH) * zoom;
+    const el = 1.12 + pitch;
+    bayPos.set(bayLook.x + Math.sin(yaw) * Math.cos(el) * bd, bayLook.y + Math.sin(el) * bd, bayLook.z + Math.cos(yaw) * Math.cos(el) * bd);
+
+    // ── blend hero → bay ──
+    camera.position.copy(heroPos).lerp(bayPos, c);
+    tmp.copy(heroLook).lerp(bayLook, c);
+    camera.lookAt(tmp);
+    frameAt(lerp(W / 2, slotC.x, c), lerp(H / 2, slotC.y, c));
+    camera.updateMatrixWorld();
+
+    // lighting: daylight → work-light bay
+    sun.intensity = lerp(2.2, 3.2, c);
+    hemi.intensity = lerp(0.6, 1.4, c);
+    hemi.groundColor.setRGB(lerp(0.5, 0.2, c), lerp(0.56, 0.23, c), lerp(0.54, 0.22, c));
+    scene.environmentIntensity = lerp(0.9, 1.1, c);
+    workLight.intensity = b * lerp(2.5, 6, c);
+    groundMat.opacity = 0.22 * (1 - c);
+
+    // ── DOM ──
+    hero.style.opacity = String(1 - clamp(a * 1.6));
+    hero.style.transform = `translateY(${-a * 60}px)`;
+    hero.style.visibility = a > 0.7 ? 'hidden' : 'visible';
+    cue.style.opacity = String(1 - clamp(p * 10));
+    introEl.style.opacity = String(1 - clamp(p * 10));
+    // "skip" shows once you're into the animation, hides when the services panel is up
+    const sk = clamp((p - 0.06) * 12) * (1 - clamp((p - 0.6) * 12));
+    skip.style.opacity = String(sk); skip.style.pointerEvents = sk > 0.5 ? 'auto' : 'none';
+    dark.style.opacity = String(c);
+    reveals.forEach((el2, i) => {
+      const k = clamp(d * 1.4 - i * 0.2);
+      el2.style.opacity = String(k);
+      el2.style.transform = `translateY(${(1 - k) * 14}px)`;
+    });
+    ui.toggleAttribute('inert', !interactive);
+
+    const pulse = reduce ? 0.6 : 0.45 + 0.35 * Math.sin(now / 260);
+    anchors.forEach((an, id) => {
+      const on = id === active && d > 0.5;
+      an.mats.forEach((m) => { m.emissive.copy(glow); m.emissiveIntensity = on ? pulse * d : 0; });
+      const el3 = spotEls.get(id);
+      if (!el3) return;
+      tmp.copy(an.pos).applyMatrix4(rig.matrixWorld).project(camera);
+      const off = tmp.z > 1 || Math.abs(tmp.x) > 1.05 || Math.abs(tmp.y) > 1.05;
+      el3.style.transform = `translate(${((tmp.x + 1) / 2) * W}px, ${((1 - tmp.y) / 2) * H}px) translate(-50%, -50%)`;
+      el3.style.opacity = off ? '0' : String(d);
+      el3.style.pointerEvents = interactive && !off ? 'auto' : 'none';
+      el3.tabIndex = interactive ? 0 : -1;
+    });
+
+    renderer.render(scene, camera);
+  }
+  requestAnimationFrame(frame);
+</script>

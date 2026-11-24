@@ -1,0 +1,24 @@
+---
+import { business } from '../data/business';
+---
+<!-- Sticky call/book bar on phones. Hidden while the engine-bay services panel is on screen so it doesn't cover the services panel. -->
+<div data-callbar class="fixed inset-x-0 bottom-0 z-40 translate-y-full p-3 transition-transform duration-300 md:hidden">
+  <div class="flex gap-2 rounded-2xl bg-ink p-2 shadow-[0_10px_30px_-10px_rgba(29,32,31,0.6)]">
+    <a href={business.phoneHref} class="flex-1 rounded-xl bg-carmine py-3 text-center font-semibold text-paper">Call {business.phone}</a>
+    <a href="#book" class="rounded-xl bg-paper px-5 py-3 font-semibold text-ink">Book</a>
+  </div>
+</div>
+<script>
+  const bar = document.querySelector<HTMLElement>('[data-callbar]')!;
+  const garage = document.getElementById('garage');
+  const update = () => {
+    let hide = false;
+    if (garage) {
+      const r = garage.getBoundingClientRect();
+      const p = -r.top / (garage.offsetHeight - innerHeight);
+      hide = p > 0.5 && p < 1; // only while the engine-bay panel is up
+    }
+    bar.style.transform = hide ? '' : 'translateY(0)';
+  };
+  addEventListener('scroll', update, { passive: true }); update();
+</script>
